@@ -75,47 +75,64 @@ Feedback is most useful when it leads to another attempt.
 
 Vocalis makes it easy to return to practice and apply what you learned from previous sessions.
 
-🧠 How It Works
-┌─────────────────────┐
-│   Choose a Topic    │
-└──────────┬──────────┘
-           ↓
-┌─────────────────────┐
-│    Start Session    │
-└──────────┬──────────┘
-           ↓
-┌─────────────────────┐
-│    Speak Freely     │
-│     🎙️ ~60 sec      │
-└──────────┬──────────┘
-           ↓
-┌─────────────────────┐
-│    Transcription    │
-└──────────┬──────────┘
-           ↓
-┌─────────────────────┐
-│    AI Analysis      │
-└──────────┬──────────┘
-           ↓
-┌─────────────────────┐
-│ Feedback & Coaching  │
-└──────────┬──────────┘
-           ↓
-┌─────────────────────┐
-│   Practice Again     │
-└─────────────────────┘
-🛠️ Tech Stack
+🗺️ Product Roadmap
 
-Vocalis is built as a modern full-stack web application.
+Vocalis is currently focused on building a strong core speaking-practice experience.
 
-Technology	Purpose
-Next.js	Application framework
-React	User interface
-TypeScript	Type-safe development
-Tailwind CSS	Styling and responsive design
-shadcn/ui	Reusable interface components
-Lucide React	Icons
-MediaRecorder API	Browser audio recording
-Next.js API Routes	Backend/API layer
+Future directions include:
 
-AI and transcription providers are integrated through application services so that the underlying models can be changed without rebuilding the entire product.
+More advanced speaking analytics
+Deeper performance tracking
+Personalized practice plans
+Adaptive difficulty
+More sophisticated topic generation
+Expanded communication skill categories
+Better long-term progress insights
+Mobile applications
+Additional AI coaching capabilities
+
+The long-term vision is to make Vocalis a comprehensive AI communication training platform, not merely a speech analyzer.
+
+🎯 Vision
+
+Communication is a skill.
+
+And skills are built through deliberate practice.
+
+Vocalis aims to make that practice:
+
+Accessible. Repeatable. Measurable. Personalized.
+
+The long-term goal is simple:
+
+Help people become better speakers by giving them a place to practice every day.
+
+🚧 Current Status
+
+Vocalis is currently an MVP under active development.
+
+The project is being developed with a focus on validating the core experience:
+
+Speaking → Analysis → Feedback → Improvement → Repeat
+
+Features, architecture, and AI integrations may continue to evolve as the product develops.
+
+🤝 Contributing
+
+Contributions, ideas, and feedback are welcome.
+
+If you find a bug or have an idea that could make Vocalis better, feel free to open an issue or submit a pull request.
+
+📄 License
+
+This project is currently provided for development and evaluation purposes.
+
+A formal open-source license may be added as the project evolves.
+
+🌐 Project
+
+Vocalis
+
+Speak. Analyze. Improve.
+
+Built to help people turn communication from something they worry about into something they can deliberately train.
