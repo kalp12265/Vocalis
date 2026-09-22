@@ -46,6 +46,16 @@ Vocalis uses the browser's native microphone capabilities to capture your speaki
 
 Your spoken response can be converted into text for analysis.
 
+Vocalis uses the [AssemblyAI](https://www.assemblyai.com) JavaScript SDK to transcribe your recording. When you finish speaking, the recorded audio is uploaded to AssemblyAI's speech-to-text API, and the resulting transcript is what gets reviewed and analyzed. This runs server-side, so your API key is never exposed to the browser, and it works across browsers that don't support native speech recognition. You can still edit the transcript by hand before analysis if anything needs correcting.
+
+The integration also uses several AssemblyAI features:
+
+- **Speaker Diarization** — identifies individual speakers and labels each segment of the transcript, in case more than one voice is picked up in a recording.
+- **Automatic Language Detection** — detects the spoken language and reports a confidence score, shown alongside your transcript.
+- **Formatting** — numbers, dates, and similar entities are formatted for readability rather than transcribed verbatim.
+- **Word Search** — search your finished transcript for specific words or phrases (e.g. filler words) and see how many times each one appears.
+- **Prompting and Keyterms** — the practice topic you're responding to is passed to AssemblyAI as contextual prompting, improving transcription accuracy for topic-specific vocabulary.
+
 🤖 AI-Powered Analysis
 
 Vocalis analyzes your response and provides structured feedback around areas such as:
@@ -106,6 +116,16 @@ Accessible. Repeatable. Measurable. Personalized.
 The long-term goal is simple:
 
 Help people become better speakers by giving them a place to practice every day.
+
+⚙️ Setup
+
+To run transcription locally, add your AssemblyAI API key to a `.env.local` file in the project root:
+
+```
+ASSEMBLYAI_API_KEY=your-key-here
+```
+
+Get a key from the [AssemblyAI dashboard](https://www.assemblyai.com/dashboard).
 
 🚧 Current Status
 
