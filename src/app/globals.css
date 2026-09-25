@@ -79,3 +79,5 @@
 @keyframes voice-coach-pulse{50%{box-shadow:0 0 0 7px #e9764533}}
 @media(max-width:650px){.voice-coach-head{flex-wrap:wrap}.voice-coach-start,.voice-coach-end{width:100%;justify-content:center}}
 @media(prefers-reduced-motion:reduce){.voice-coach-orb.speaking{animation:none}}
+.voice-coach-offer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border-radius:10px;background:#fff;border:1px solid #f0c9ae;animation:idea-pop .25s ease}.voice-coach-offer>span{font-size:11px;font-weight:600;font-family:var(--font-heading)}.voice-coach-offer>div{display:flex;gap:6px}.voice-coach-offer button{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--muted);background:#f2f1eb}.voice-coach-offer button:hover{background:#e9e8df}.voice-coach-offer button.yes{color:#fff;background:var(--orange)}.voice-coach-offer button.yes:hover{background:#d96838}
+@media(max-width:650px){.voice-coach-offer>div{width:100%}.voice-coach-offer button{flex:1;justify-content:center}}

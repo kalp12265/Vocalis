@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { Headphones, PhoneOff, RotateCw, Wand2, Mic, AlertCircle } from 'lucide-react';
+import { Headphones, PhoneOff, RotateCw, Wand2, Mic, AlertCircle, Check, X } from 'lucide-react';
 import { Technique } from '@/types';
 const WS_URL = 'wss://agents.assemblyai.com/v1/ws';
 const OUTPUT_RATE = 24000;
@@ -11,7 +11,7 @@ const plain = (text: string) => text.replace(/[*_#`>|[\]{}<>]/g, '').replace(/\s
 const ordinals = ['one', 'two', 'three', 'four', 'five'];
 function buildGreeting(techniques: Technique[]) {
  const parts = techniques.slice(0, 3).map((t, i) => `Technique ${ordinals[i]}: ${plain(t.name)}. ${plain(t.action)}`);
- return plain(`Hi, I'm your Vocalis voice coach. Here are your small techniques for a big difference. ${parts.join(' ')} Would you like me to say your speech in a better way, using these techniques? Just say yes.`);
+ return plain(`Hi, I'm your Vocalis voice coach. Here are your small techniques for a big difference. ${parts.join(' ')} Would you like me to say your speech in a better way, using these techniques? Tap yes or no below.`);
 }
 function buildPrompt({ topic, transcript, techniques, feedback }: { topic: string; transcript: string; techniques: Technique[]; feedback: string }) {
  const list = techniques.map((t, i) => `${i + 1}. ${plain(t.name)} (${plain(t.weakness)}). Why: ${plain(t.why)} Do: ${plain(t.action)} Practice: ${plain(t.practice)}`).join('\n');
@@ -38,6 +38,8 @@ export default function VoiceCoach({ topic, transcript, techniques, feedback }: 
  const [error, setError] = useState('');
  const [lines, setLines] = useState<Line[]>([]);
  const [speaking, setSpeaking] = useState(false);
+ // The greeting ends with a yes/no question; answer buttons show once it has been spoken.
+ const [offer, setOffer] = useState<'pending' | 'open' | 'answered'>('pending');
  const ws = useRef<WebSocket | null>(null);
  const ctx = useRef<AudioContext | null>(null);
  const stream = useRef<MediaStream | null>(null);
@@ -66,7 +68,7 @@ export default function VoiceCoach({ topic, transcript, techniques, feedback }: 
  }
  function addLine(who: Line['who'], text: string) { if (text.trim()) setLines(l => [...l, { who, text: text.trim() }]); }
  async function start() {
-  setError(''); setLines([]); setStatus('connecting');
+  setError(''); setLines([]); setOffer('pending'); setStatus('connecting');
   try {
    const audio = new AudioContext(); ctx.current = audio; playhead.current = audio.currentTime;
    const [mic, tokenResponse] = await Promise.all([
@@ -94,8 +96,8 @@ export default function VoiceCoach({ topic, transcript, techniques, feedback }: 
     if (msg.type === 'session.ready') { ready = true; setStatus('live'); }
     else if (msg.type === 'reply.audio') play(msg.data);
     else if (msg.type === 'reply.done' && msg.status === 'interrupted') flushAudio();
-    else if (msg.type === 'transcript.agent') addLine('coach', msg.text || '');
-    else if (msg.type === 'transcript.user') addLine('you', msg.text || '');
+    else if (msg.type === 'transcript.agent') { addLine('coach', msg.text || ''); setOffer(o => o === 'pending' ? 'open' : o); }
+    else if (msg.type === 'transcript.user') { addLine('you', msg.text || ''); setOffer('answered'); }
     else if (msg.type === 'session.error' || msg.type === 'error') { setError(msg.message || 'The voice coach hit a problem.'); }
    };
    socket.onclose = () => { if (ws.current === socket) { teardown(); setStatus(s => s === 'error' ? s : 'ended'); } };
@@ -108,13 +110,18 @@ export default function VoiceCoach({ topic, transcript, techniques, feedback }: 
   }
  }
  function ask(instructions: string) { if (ws.current?.readyState === WebSocket.OPEN) ws.current.send(JSON.stringify({ type: 'reply.create', instructions })); }
+ function answer(yes: boolean) {
+  setOffer('answered'); addLine('you', yes ? 'Yes, say my speech better.' : 'No, thanks.');
+  ask(yes ? 'The user tapped yes. Say their speech in a better way now, following your instructions for the improved version.' : 'The user tapped no. Acknowledge it in one short sentence and ask if they have any questions about their techniques.');
+ }
  function stop() { teardown(); setStatus('ended'); }
  const live = status === 'live';
  return <div className={`voice-coach ${live ? 'live' : ''}`}>
-  <div className="voice-coach-head"><span className={`voice-coach-orb ${speaking ? 'speaking' : ''}`}><Headphones size={18} /></span><div><strong>Voice coach</strong><small>{live ? speaking ? 'Your coach is speaking… talk any time to interrupt.' : 'Listening. Ask a question, or say “yes” to hear your speech said better.' : status === 'connecting' ? 'Connecting to your coach…' : 'Hear these techniques read aloud, then hear your own speech said a better way.'}</small></div>
+  <div className="voice-coach-head"><span className={`voice-coach-orb ${speaking ? 'speaking' : ''}`}><Headphones size={18} /></span><div><strong>Voice coach</strong><small>{live ? speaking ? 'Your coach is speaking… talk any time to interrupt.' : offer === 'open' ? 'Tap yes to hear your speech said better, or ask a question.' : 'Listening. Ask a question any time.' : status === 'connecting' ? 'Connecting to your coach…' : 'Hear these techniques read aloud, then hear your own speech said a better way.'}</small></div>
    {live ? <button className="voice-coach-end" onClick={stop}><PhoneOff size={13} />End</button> : <button className="voice-coach-start" onClick={start} disabled={status === 'connecting'}><Mic size={13} />{status === 'connecting' ? 'Connecting…' : status === 'idle' ? 'Talk with your coach' : 'Talk again'}</button>}
   </div>
-  {live && <div className="voice-coach-actions"><button onClick={() => ask('Say the user’s speech in a better way now, following your instructions for the improved version.')}><Wand2 size={12} />Say my speech better</button><button onClick={() => ask('Read the user’s techniques again, one at a time, simply and briefly.')}><RotateCw size={12} />Read techniques again</button></div>}
+  {live && offer === 'open' && <div className="voice-coach-offer" role="group" aria-label="Answer your coach"><span>Would you like me to say your speech in a better way?</span><div><button className="yes" onClick={() => answer(true)}><Check size={13} />Yes, say it better</button><button onClick={() => answer(false)}><X size={13} />No, thanks</button></div></div>}
+  {live && offer === 'answered' && <div className="voice-coach-actions"><button onClick={() => ask('Say the user’s speech in a better way now, following your instructions for the improved version.')}><Wand2 size={12} />Say my speech better</button><button onClick={() => ask('Read the user’s techniques again, one at a time, simply and briefly.')}><RotateCw size={12} />Read techniques again</button></div>}
   {error && <p className="voice-coach-error" role="alert"><AlertCircle size={13} />{error}</p>}
   {lines.length > 0 && <div className="voice-coach-log" aria-live="polite">{lines.map((l, i) => <p key={i} className={l.who}><b>{l.who === 'coach' ? 'Coach' : 'You'}</b>{l.text}</p>)}<div ref={logEnd} /></div>}
   {status === 'idle' && <p className="voice-coach-note">Uses your microphone. Your transcript and techniques are shared with AssemblyAI’s voice agent for this conversation. Sessions end after 10 minutes.</p>}
