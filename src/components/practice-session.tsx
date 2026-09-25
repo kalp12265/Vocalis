@@ -16,9 +16,13 @@ import {
   AlertCircle,
   Clock3,
   Download,
+  Lock,
+  Timer,
 } from "lucide-react";
 import { getCategory } from "@/data/topics";
 import { useVocalis } from "@/hooks/use-vocalis";
+import { useUnlock } from "@/hooks/use-unlock";
+import { UNLOCK_COST, UNLOCK_MINUTES } from "@/data/rewards";
 import { Waveform, iconMap } from "./ui";
 import { AudioRecorder } from "@/services/recording";
 import {
@@ -33,6 +37,8 @@ import {
 import { demoTranscript } from "@/data/demo";
 type State = "ready" | "countdown" | "recording" | "review" | "processing";
 const SAMPLE_TOPIC = "Why are mountains better than beaches?";
+const LENGTHS = [60, 180, 300];
+const formatLength = (seconds: number) => `${seconds / 60} min`;
 export default function PracticeSession({ mode }: { mode: string }) {
   const params = useSearchParams();
   const router = useRouter();
@@ -49,6 +55,12 @@ export default function PracticeSession({ mode }: { mode: string }) {
   const [state, setState] = useState<State>("ready");
   const [countdown, setCountdown] = useState(3);
   const [elapsed, setElapsed] = useState(0);
+  const [limit, setLimit] = useState(() => {
+    const requested = Number(params.get("length"));
+    return LENGTHS.includes(requested) ? requested : 60;
+  });
+  const unlock = useUnlock();
+  const unlockLength = unlock.minutes * 60;
   const [transcript, setTranscript] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
   const [error, setError] = useState("");
@@ -118,15 +130,21 @@ export default function PracticeSession({ mode }: { mode: string }) {
     if (state !== "recording") return;
     const interval = setInterval(() => {
       const seconds = Math.min(
-        60,
+        limit,
         Math.floor((Date.now() - recordingStart.current) / 1000),
       );
       elapsedRef.current = seconds;
       setElapsed(seconds);
-      if (seconds >= 60) finishRef.current();
+      if (seconds >= limit) finishRef.current();
     }, 200);
     return () => clearInterval(interval);
-  }, [state]);
+  }, [state, limit]);
+  useEffect(() => {
+    // Keep a long selection in step with the unlock: fall back when it expires, follow it when upgraded.
+    if (state !== "ready" || limit <= LENGTHS.at(-1)!) return;
+    if (!unlock.active) setLimit(LENGTHS.at(-1)!);
+    else if (limit !== unlockLength) setLimit(unlockLength);
+  }, [unlock.active, unlockLength, state, limit]);
   useEffect(() => {
     if (state !== "processing") return;
     const interval = setInterval(
@@ -213,7 +231,7 @@ export default function PracticeSession({ mode }: { mode: string }) {
     stt.current?.stop();
     elapsedRef.current = Math.max(
       1,
-      Math.min(60, Math.round((Date.now() - recordingStart.current) / 1000)),
+      Math.min(limit, Math.round((Date.now() - recordingStart.current) / 1000)),
     );
     setElapsed(elapsedRef.current);
     setState("review");
@@ -280,13 +298,13 @@ export default function PracticeSession({ mode }: { mode: string }) {
   }
   function manual() {
     setIsDemo(false);
-    setElapsed(60);
-    elapsedRef.current = 60;
+    setElapsed(limit);
+    elapsedRef.current = limit;
     setError("");
     setTranscript("");
     setAudioUrl("");
     setNotice(
-      "Paste what you said or transcribe your own recording. Feedback is based on this text; 60 seconds is used as the estimated speaking duration.",
+      `Paste what you said or transcribe your own recording. Feedback is based on this text; ${limit} seconds is used as the estimated speaking duration.`,
     );
     setState("review");
   }
@@ -340,7 +358,7 @@ export default function PracticeSession({ mode }: { mode: string }) {
       analyzing.current = false;
     }
   }
-  const remaining = 60 - elapsed;
+  const remaining = limit - elapsed;
   return (
     <div className="practice-page">
       <div className="practice-breadcrumb">
@@ -413,7 +431,7 @@ export default function PracticeSession({ mode }: { mode: string }) {
               </span>
               <span>
                 <Clock3 size={12} />
-                60-second practice
+                {isDemo ? "1 min" : formatLength(limit)} practice
               </span>
             </div>
             <div className="practice-topic">
@@ -430,7 +448,7 @@ export default function PracticeSession({ mode }: { mode: string }) {
               <p>
                 {state === "review"
                   ? "Your words are the starting point. Let’s find what comes next."
-                  : "Speak for 60 seconds. No scripts. No perfect answers."}
+                  : `Speak for ${limit === 60 ? "60 seconds" : `${limit / 60} minutes`}. No scripts. No perfect answers.`}
               </p>
               {state === "ready" && (
                 <button
@@ -447,6 +465,49 @@ export default function PracticeSession({ mode }: { mode: string }) {
             </div>
             {state !== "review" && (
               <div className="record-zone">
+                {state === "ready" && (
+                  <div
+                    className="length-picker"
+                    role="radiogroup"
+                    aria-label="Practice length"
+                  >
+                    {LENGTHS.map((seconds) => (
+                      <button
+                        key={seconds}
+                        role="radio"
+                        aria-checked={limit === seconds}
+                        className={`filter-pill ${limit === seconds ? "active" : ""}`}
+                        onClick={() => setLimit(seconds)}
+                      >
+                        {formatLength(seconds)}
+                      </button>
+                    ))}
+                    {unlock.active ? (
+                      <button
+                        role="radio"
+                        aria-checked={limit === unlockLength}
+                        className={`filter-pill length-unlocked ${limit === unlockLength ? "active" : ""}`}
+                        onClick={() => setLimit(unlockLength)}
+                        title={`Unlocked for ${unlock.label}`}
+                      >
+                        <Timer size={11} />
+                        {formatLength(unlockLength)}
+                        <small>{unlock.label}</small>
+                      </button>
+                    ) : (
+                      <button
+                        role="radio"
+                        aria-checked={false}
+                        className="filter-pill length-locked"
+                        disabled
+                        title={`Redeem ${UNLOCK_COST} points in the top bar to unlock ${UNLOCK_MINUTES}+ minute sessions for 1 hour`}
+                      >
+                        <Lock size={10} />
+                        {UNLOCK_MINUTES}+ min
+                      </button>
+                    )}
+                  </div>
+                )}
                 <div
                   className={`session-timer ${remaining <= 10 && state === "recording" ? "warning" : ""}`}
                   aria-label={
@@ -457,7 +518,21 @@ export default function PracticeSession({ mode }: { mode: string }) {
                 >
                   {state === "countdown"
                     ? countdown || "…"
-                    : `${String(Math.floor((state === "ready" ? 60 : remaining) / 60)).padStart(2, "0")}:${String((state === "ready" ? 60 : remaining) % 60).padStart(2, "0")}`}
+                    : `${String(Math.floor((state === "ready" ? limit : remaining) / 60)).padStart(2, "0")}:${String((state === "ready" ? limit : remaining) % 60).padStart(2, "0")}`}
+                </div>
+                <div
+                  className={`record-progress ${remaining <= 10 && state === "recording" ? "warning" : ""}`}
+                  role="progressbar"
+                  aria-label="Speaking time used"
+                  aria-valuemin={0}
+                  aria-valuemax={limit}
+                  aria-valuenow={state === "recording" ? elapsed : 0}
+                >
+                  <i
+                    style={{
+                      width: `${state === "recording" ? Math.min(100, (elapsed / limit) * 100) : 0}%`,
+                    }}
+                  />
                 </div>
                 <div
                   className={`record-status ${state === "recording" ? "listening" : ""}`}
