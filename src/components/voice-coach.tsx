@@ -40,24 +40,34 @@ export default function VoiceCoach({ topic, transcript, techniques, feedback }: 
  const [speaking, setSpeaking] = useState(false);
  // The greeting ends with a yes/no question; answer buttons show once it has been spoken.
  const [offer, setOffer] = useState<'pending' | 'open' | 'answered'>('pending');
+ // The coach pauses as soon as the user starts talking, like a person would. If the server decides it was
+ // only a back-channel ("mhm"), playback resumes; if it was a real interruption, the rest of the reply is dropped.
+ const [paused, setPaused] = useState(false);
+ const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
  const ws = useRef<WebSocket | null>(null);
  const ctx = useRef<AudioContext | null>(null);
+ // Playback gets its own context so pausing it never stops microphone capture.
+ const playCtx = useRef<AudioContext | null>(null);
  const stream = useRef<MediaStream | null>(null);
  const sources = useRef<AudioBufferSourceNode[]>([]);
  const playhead = useRef(0);
  const logEnd = useRef<HTMLDivElement | null>(null);
  useEffect(() => { logEnd.current?.scrollIntoView({ block: 'nearest' }); }, [lines]);
  useEffect(() => () => teardown(), []);
- function flushAudio() { for (const s of sources.current) { try { s.stop(); } catch {} } sources.current = []; playhead.current = ctx.current?.currentTime || 0; setSpeaking(false); }
+ function flushAudio() { for (const s of sources.current) { try { s.stop(); } catch {} } sources.current = []; playhead.current = playCtx.current?.currentTime || 0; setSpeaking(false); }
+ function clearResume() { if (resumeTimer.current) { clearTimeout(resumeTimer.current); resumeTimer.current = null; } }
+ function pausePlayback() { clearResume(); if (!sources.current.length || playCtx.current?.state !== 'running') return; playCtx.current.suspend().catch(() => {}); setPaused(true); }
+ function resumePlayback() { clearResume(); if (playCtx.current?.state === 'suspended') playCtx.current.resume().catch(() => {}); setPaused(false); }
  function teardown() {
   const socket = ws.current; ws.current = null;
   if (socket) { try { if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: 'session.end' })); socket.close(); } catch {} }
-  flushAudio();
+  clearResume(); flushAudio(); setPaused(false);
   stream.current?.getTracks().forEach(t => t.stop()); stream.current = null;
   ctx.current?.close().catch(() => {}); ctx.current = null;
+  playCtx.current?.close().catch(() => {}); playCtx.current = null;
  }
  function play(base64: string) {
-  const audio = ctx.current; if (!audio) return;
+  const audio = playCtx.current; if (!audio) return;
   const raw = atob(base64); const samples = new Float32Array(raw.length >> 1);
   for (let i = 0; i < samples.length; i++) { let v = raw.charCodeAt(i * 2) | (raw.charCodeAt(i * 2 + 1) << 8); if (v >= 32768) v -= 65536; samples[i] = v / 32768; }
   const buffer = audio.createBuffer(1, samples.length, OUTPUT_RATE); buffer.getChannelData(0).set(samples);
@@ -70,7 +80,8 @@ export default function VoiceCoach({ topic, transcript, techniques, feedback }: 
  async function start() {
   setError(''); setLines([]); setOffer('pending'); setStatus('connecting');
   try {
-   const audio = new AudioContext(); ctx.current = audio; playhead.current = audio.currentTime;
+   const audio = new AudioContext(); ctx.current = audio;
+   const output = new AudioContext(); playCtx.current = output; playhead.current = output.currentTime;
    const [mic, tokenResponse] = await Promise.all([
     navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: true } }),
     fetch('/api/voice-token', { cache: 'no-store' }),
@@ -95,7 +106,11 @@ export default function VoiceCoach({ topic, transcript, techniques, feedback }: 
     const msg = JSON.parse(event.data);
     if (msg.type === 'session.ready') { ready = true; setStatus('live'); }
     else if (msg.type === 'reply.audio') play(msg.data);
-    else if (msg.type === 'reply.done' && msg.status === 'interrupted') flushAudio();
+    else if (msg.type === 'input.speech.started') pausePlayback();
+    // Give the server a moment to decide; a back-channel never produces an interrupted reply, so carry on.
+    else if (msg.type === 'input.speech.stopped') { if (playCtx.current?.state === 'suspended') { clearResume(); resumeTimer.current = setTimeout(resumePlayback, 900); } }
+    else if (msg.type === 'reply.done' && msg.status === 'interrupted') { flushAudio(); resumePlayback(); }
+    else if (msg.type === 'reply.started') { if (playCtx.current?.state === 'suspended') { flushAudio(); resumePlayback(); } }
     else if (msg.type === 'transcript.agent') { addLine('coach', msg.text || ''); setOffer(o => o === 'pending' ? 'open' : o); }
     else if (msg.type === 'transcript.user') { addLine('you', msg.text || ''); setOffer('answered'); }
     else if (msg.type === 'session.error' || msg.type === 'error') { setError(msg.message || 'The voice coach hit a problem.'); }
@@ -117,7 +132,7 @@ export default function VoiceCoach({ topic, transcript, techniques, feedback }: 
  function stop() { teardown(); setStatus('ended'); }
  const live = status === 'live';
  return <div className={`voice-coach ${live ? 'live' : ''}`}>
-  <div className="voice-coach-head"><span className={`voice-coach-orb ${speaking ? 'speaking' : ''}`}><Headphones size={18} /></span><div><strong>Voice coach</strong><small>{live ? speaking ? 'Your coach is speaking… talk any time to interrupt.' : offer === 'open' ? 'Tap yes to hear your speech said better, or ask a question.' : 'Listening. Ask a question any time.' : status === 'connecting' ? 'Connecting to your coach…' : 'Hear these techniques read aloud, then hear your own speech said a better way.'}</small></div>
+  <div className="voice-coach-head"><span className={`voice-coach-orb ${speaking && !paused ? 'speaking' : ''} ${paused ? 'paused' : ''}`}><Headphones size={18} /></span><div><strong>Voice coach</strong><small>{live ? paused ? 'Paused. Go ahead, your coach is listening.' : speaking ? 'Your coach is speaking… talk any time and it will pause.' : offer === 'open' ? 'Tap yes to hear your speech said better, or ask a question.' : 'Listening. Ask a question any time.' : status === 'connecting' ? 'Connecting to your coach…' : 'Hear these techniques read aloud, then hear your own speech said a better way.'}</small></div>
    {live ? <button className="voice-coach-end" onClick={stop}><PhoneOff size={13} />End</button> : <button className="voice-coach-start" onClick={start} disabled={status === 'connecting'}><Mic size={13} />{status === 'connecting' ? 'Connecting…' : status === 'idle' ? 'Talk with your coach' : 'Talk again'}</button>}
   </div>
   {live && offer === 'open' && <div className="voice-coach-offer" role="group" aria-label="Answer your coach"><span>Would you like me to say your speech in a better way?</span><div><button className="yes" onClick={() => answer(true)}><Check size={13} />Yes, say it better</button><button onClick={() => answer(false)}><X size={13} />No, thanks</button></div></div>}
