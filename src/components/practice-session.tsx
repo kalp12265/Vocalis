@@ -37,6 +37,14 @@ import {
   requestTranscription,
 } from "@/services/client";
 import { demoTranscript } from "@/data/demo";
+import { DetectedEntity } from "@/types";
+const uniqueEntities = (list: DetectedEntity[]) =>
+  list.filter(
+    (e, i) =>
+      list.findIndex(
+        (x) => x.type === e.type && x.text.toLowerCase() === e.text.toLowerCase(),
+      ) === i,
+  );
 type State = "ready" | "countdown" | "recording" | "review" | "processing";
 const SAMPLE_TOPIC = "Why are mountains better than beaches?";
 const LENGTHS = [60, 180, 300];
@@ -73,6 +81,7 @@ export default function PracticeSession({ mode }: { mode: string }) {
   const [loadingTopic, setLoadingTopic] = useState(false);
   const [processingStep, setProcessingStep] = useState(0);
   const [transcribing, setTranscribing] = useState(false);
+  const [entities, setEntities] = useState<DetectedEntity[]>([]);
   const recorder = useRef<AudioRecorder | null>(null);
   const stt = useRef<TranscriptionService | null>(null);
   const mounted = useRef(true);
@@ -178,6 +187,7 @@ export default function PracticeSession({ mode }: { mode: string }) {
     setError("");
     setNotice("");
     setTranscript("");
+    setEntities([]);
     setElapsed(0);
     elapsedRef.current = 0;
     setIsDemo(false);
@@ -260,6 +270,7 @@ export default function PracticeSession({ mode }: { mode: string }) {
         if (!mounted.current) return;
         if (result.text.trim()) {
           setTranscript(result.text.trim());
+          setEntities(result.entities || []);
           setNotice("");
         } else
           setNotice(
@@ -351,6 +362,10 @@ export default function PracticeSession({ mode }: { mode: string }) {
         transcript,
         analysis,
         demo: isDemo,
+        // Keep only entities still present if the transcript was edited before analysis.
+        entities: uniqueEntities(entities).filter((e) =>
+          transcript.toLowerCase().includes(e.text.toLowerCase()),
+        ),
       });
       router.push(`/session/${id}`);
     } catch (e) {

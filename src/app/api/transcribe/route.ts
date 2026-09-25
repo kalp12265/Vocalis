@@ -49,11 +49,17 @@ export async function POST(request: Request) {
     const transcript = await Promise.race([
       client.transcripts.transcribe({
         audio: buffer,
-        language_detection: true,
+        // Vocalis supports English. Pinning it keeps transcripts on Universal-3.5 Pro; auto-detection can
+        // misread short or quiet clips as another language and fall back to a model that invents words.
+        language_code: "en",
+        // Reject recordings that are mostly silence instead of returning made-up text.
+        speech_threshold: 0.1,
         speaker_labels: true,
         format_text: true,
         // Keep "um", "uh" and other hesitations; AssemblyAI removes them by default and analysis needs them.
         disfluencies: true,
+        // Entity detection: names, organizations, places and other entities mentioned in the speech.
+        entity_detection: true,
 
         // Contextual prompting: the practice topic helps the model recognize topic-specific words correctly.
         ...(topic
@@ -78,7 +84,11 @@ export async function POST(request: Request) {
     ]);
     if (transcript.status === "error")
       return NextResponse.json(
-        { error: transcript.error || "Transcription failed." },
+        {
+          error: /speech/i.test(transcript.error || "")
+            ? "We couldn’t hear enough speech in this recording. Check your microphone and try again, or type your transcript below."
+            : transcript.error || "Transcription failed.",
+        },
         { status: 502 },
       );
     const speakerCount = new Set(
@@ -98,6 +108,10 @@ export async function POST(request: Request) {
               end: u.end,
             }))
           : null,
+      entities: (transcript.entities || []).map((e) => ({
+        type: e.entity_type,
+        text: e.text,
+      })),
     });
   } catch (error) {
     return NextResponse.json(

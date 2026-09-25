@@ -16,11 +16,12 @@ export interface Analysis {
  provider: 'local' | 'remote' | 'demo';
  mode_metrics?: Record<string, number>;
 }
-export interface Session { id: string; date: string; category: string; topic: string; duration: number; transcript: string; analysis: Analysis; demo: boolean; }
+export interface DetectedEntity { type: string; text: string; }
+export interface Session { id: string; date: string; category: string; topic: string; duration: number; transcript: string; analysis: Analysis; demo: boolean; entities?: DetectedEntity[]; }
 export interface Profile { name: string; goals: string[]; comfort: string; onboarded: boolean; customWords?: string[]; }
 export interface AnalysisInput { transcript: string; topic: string; category: string; duration: number; demo?: boolean; }
 export interface Rewards { spent: number; unlockedUntil?: string; unlockedMinutes?: number; }
 export interface UserData { profile: Profile; sessions: Session[]; rewards?: Rewards; }
 export interface TranscriptUtterance { speaker: string; text: string; start: number; end: number; }
-export interface TranscriptionResult { id: string; text: string; language_code: string | null; language_confidence: number | null; utterances: TranscriptUtterance[] | null; }
+export interface TranscriptionResult { id: string; text: string; language_code: string | null; language_confidence: number | null; utterances: TranscriptUtterance[] | null; entities: DetectedEntity[]; }
 export interface WordSearchMatch { text: string; count: number; timestamps: number[][]; }
