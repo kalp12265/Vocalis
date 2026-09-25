@@ -23,6 +23,8 @@ import { getCategory } from "@/data/topics";
 import { useVocalis } from "@/hooks/use-vocalis";
 import { useUnlock } from "@/hooks/use-unlock";
 import { UNLOCK_COST, UNLOCK_MINUTES } from "@/data/rewards";
+import { FREE_CUSTOM_WORDS, UNLOCKED_CUSTOM_WORDS } from "@/data/custom-words";
+import CustomWords from "./custom-words";
 import { Waveform, iconMap } from "./ui";
 import { AudioRecorder } from "@/services/recording";
 import {
@@ -35,6 +37,14 @@ import {
   requestTranscription,
 } from "@/services/client";
 import { demoTranscript } from "@/data/demo";
+import { Analysis, AnalysisInput, DetectedEntity } from "@/types";
+const uniqueEntities = (list: DetectedEntity[]) =>
+  list.filter(
+    (e, i) =>
+      list.findIndex(
+        (x) => x.type === e.type && x.text.toLowerCase() === e.text.toLowerCase(),
+      ) === i,
+  );
 type State = "ready" | "countdown" | "recording" | "review" | "processing";
 const SAMPLE_TOPIC = "Why are mountains better than beaches?";
 const LENGTHS = [60, 180, 300];
@@ -42,7 +52,7 @@ const formatLength = (seconds: number) => `${seconds / 60} min`;
 export default function PracticeSession({ mode }: { mode: string }) {
   const params = useSearchParams();
   const router = useRouter();
-  const { addSession } = useVocalis();
+  const { data, addSession, updateProfile } = useVocalis();
   const [categoryId, setCategoryId] = useState(mode);
   const category = getCategory(categoryId);
   const Icon = iconMap[category.icon];
@@ -61,6 +71,8 @@ export default function PracticeSession({ mode }: { mode: string }) {
   });
   const unlock = useUnlock();
   const unlockLength = unlock.minutes * 60;
+  const customWords = data.profile.customWords || [];
+  const wordAllowance = unlock.active ? UNLOCKED_CUSTOM_WORDS : FREE_CUSTOM_WORDS;
   const [transcript, setTranscript] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
   const [error, setError] = useState("");
@@ -69,6 +81,7 @@ export default function PracticeSession({ mode }: { mode: string }) {
   const [loadingTopic, setLoadingTopic] = useState(false);
   const [processingStep, setProcessingStep] = useState(0);
   const [transcribing, setTranscribing] = useState(false);
+  const [entities, setEntities] = useState<DetectedEntity[]>([]);
   const recorder = useRef<AudioRecorder | null>(null);
   const stt = useRef<TranscriptionService | null>(null);
   const mounted = useRef(true);
@@ -78,6 +91,9 @@ export default function PracticeSession({ mode }: { mode: string }) {
   const recordingStart = useRef(0);
   const stopped = useRef(false);
   const analyzing = useRef(false);
+  // Feedback is requested in the background as soon as the transcript arrives, so it's usually
+  // ready by the time the user taps Analyze. Reused only if the inputs haven't changed since.
+  const prefetch = useRef<{ key: string; result: Promise<Analysis> } | null>(null);
   useEffect(() => {
     mounted.current = true;
     if (params.get("demo") === "true") {
@@ -149,7 +165,7 @@ export default function PracticeSession({ mode }: { mode: string }) {
     if (state !== "processing") return;
     const interval = setInterval(
       () => setProcessingStep((s) => Math.min(s + 1, 2)),
-      1200,
+      400,
     );
     return () => clearInterval(interval);
   }, [state]);
@@ -174,6 +190,7 @@ export default function PracticeSession({ mode }: { mode: string }) {
     setError("");
     setNotice("");
     setTranscript("");
+    setEntities([]);
     setElapsed(0);
     elapsedRef.current = 0;
     setIsDemo(false);
@@ -248,11 +265,17 @@ export default function PracticeSession({ mode }: { mode: string }) {
       setTranscribing(true);
       setNotice("Transcribing your recording with AssemblyAI…");
       try {
-        const result = await requestTranscription(audio);
+        const result = await requestTranscription(
+          audio,
+          side ? `${side}: ${topic}` : topic,
+          customWords.slice(0, wordAllowance),
+        );
         if (!mounted.current) return;
         if (result.text.trim()) {
           setTranscript(result.text.trim());
+          setEntities(result.entities || []);
           setNotice("");
+          prefetchAnalysis(result.text.trim());
         } else
           setNotice(
             "AssemblyAI could not detect speech in this recording. You can type your transcript below.",
@@ -308,6 +331,22 @@ export default function PracticeSession({ mode }: { mode: string }) {
     );
     setState("review");
   }
+  function analysisInput(text: string): AnalysisInput {
+    return {
+      transcript: text,
+      topic: side ? `${side}: ${topic}` : topic,
+      category: categoryId,
+      duration: Math.max(1, elapsedRef.current),
+      demo: isDemo,
+    };
+  }
+  function prefetchAnalysis(text: string) {
+    const input = analysisInput(text);
+    if (input.demo || text.split(/\s+/).length < 5) return;
+    const result = requestAnalysis(input);
+    result.catch(() => {});
+    prefetch.current = { key: JSON.stringify(input), result };
+  }
   async function analyze() {
     if (analyzing.current) return;
     if (transcript.trim().split(/\s+/).length < 5) {
@@ -319,19 +358,20 @@ export default function PracticeSession({ mode }: { mode: string }) {
     setState("processing");
     setProcessingStep(0);
     try {
+      const input = analysisInput(transcript);
+      const cached =
+        prefetch.current?.key === JSON.stringify(input)
+          ? prefetch.current.result.catch(() => requestAnalysis(input))
+          : requestAnalysis(input);
+      prefetch.current = null;
       const [analysis] = await Promise.all([
-        requestAnalysis({
-          transcript,
-          topic: side ? `${side}: ${topic}` : topic,
-          category: categoryId,
-          duration: Math.max(1, elapsedRef.current),
-          demo: isDemo,
-        }),
-        new Promise((resolve) => setTimeout(resolve, 3300)),
+        cached,
+        // A brief minimum so the progress steps don't flash past.
+        new Promise((resolve) => setTimeout(resolve, 900)),
       ]);
       if (!mounted.current) return;
       setProcessingStep(3);
-      await new Promise((resolve) => setTimeout(resolve, 650));
+      await new Promise((resolve) => setTimeout(resolve, 250));
       if (!mounted.current) return;
       const id = crypto.randomUUID();
       addSession({
@@ -343,6 +383,10 @@ export default function PracticeSession({ mode }: { mode: string }) {
         transcript,
         analysis,
         demo: isDemo,
+        // Keep only entities still present if the transcript was edited before analysis.
+        entities: uniqueEntities(entities).filter((e) =>
+          transcript.toLowerCase().includes(e.text.toLowerCase()),
+        ),
       });
       router.push(`/session/${id}`);
     } catch (e) {
@@ -591,6 +635,14 @@ export default function PracticeSession({ mode }: { mode: string }) {
                   </p>
                 )}
               </div>
+            )}
+            {state === "ready" && (
+              <CustomWords
+                words={customWords}
+                allowance={wordAllowance}
+                unlocked={unlock.active}
+                onChange={(words) => updateProfile({ customWords: words })}
+              />
             )}
             <div className="practice-bottom">
               <ShieldCheck size={13} />

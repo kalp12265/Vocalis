@@ -1,15 +1,162 @@
-'use client';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState } from 'react';
-import { House, Mic, ChartNoAxesCombined, BookOpen, History, UserRound, ArrowUpRight, Flame, Menu, X, ChevronDown, Sparkles, CircleHelp } from 'lucide-react';
-import { Logo, ButtonLink } from './ui';
-import { getStats, useVocalis } from '@/hooks/use-vocalis';
-import IdeaVote from './idea-vote';
-import RewardsBadge from './rewards-badge';
-const nav=[{href:'/dashboard',label:'Home',icon:House},{href:'/practice',label:'Practice',icon:Mic},{href:'/progress',label:'Progress',icon:ChartNoAxesCombined},{href:'/topics',label:'Topics',icon:BookOpen},{href:'/history',label:'History',icon:History},{href:'/profile',label:'Profile',icon:UserRound}];
-export default function AppShell({children}:{children:React.ReactNode}){
- const pathname=usePathname();const {data,ready,storageError}=useVocalis();const stats=getStats(data.sessions);const [open,setOpen]=useState(false);
- return <div className="app-shell"><aside className={`sidebar ${open?'sidebar-open':''}`}><div className="sidebar-logo"><Logo/><button className="icon-button mobile-toggle" aria-label="Close menu" onClick={()=>setOpen(false)}><X/></button></div><div className="workspace-label">YOUR SPEAKING SPACE</div><nav aria-label="Application navigation">{nav.map(item=><Link key={item.href} href={item.href} onClick={()=>setOpen(false)} className={`sidebar-link ${pathname.startsWith(item.href)?'selected':''}`}><item.icon size={19}/>{item.label}{item.label==='Practice'&&<span className="nav-new">60s</span>}</Link>)}</nav><div className="sidebar-coach"><span className="icon-box orange"><Sparkles size={21}/></span><strong>A little practice.<br/>A stronger voice.</strong><p>Your next breakthrough could be one session away.</p><ButtonLink href="/practice">Let’s practice <ArrowUpRight size={16}/></ButtonLink></div><Link href="/#how-it-works" className="sidebar-help"><CircleHelp size={17}/>How Vocalis works <ArrowUpRight size={14}/></Link><Link href="/profile" className="sidebar-profile"><span className="profile-avatar">{data.profile.name.slice(0,1).toUpperCase()||'Y'}</span><span><strong>{data.profile.name||'Speaker'}</strong><small>{stats.level} speaker</small></span><ChevronDown size={15}/></Link></aside>{open&&<button className="sidebar-backdrop" aria-label="Close navigation" onClick={()=>setOpen(false)}/>}
- <div className="app-main"><header className="app-topbar"><div><button className="icon-button mobile-toggle" aria-label="Open navigation" onClick={()=>setOpen(true)}><Menu/></button><span className="breadcrumb">Your workspace <span>/</span> <b>{pathname.startsWith('/session')?'Session results':nav.find(n=>pathname.startsWith(n.href))?.label||'Practice'}</b></span></div><div className="topbar-right"><IdeaVote/><RewardsBadge/><span className="streak-badge"><Flame size={16}/>{stats.streak} day streak</span><Link href="/profile" className="profile-avatar small" aria-label="Open profile">{data.profile.name.slice(0,1).toUpperCase()||'Y'}</Link></div></header><main className="app-content">{storageError&&<div className="error-banner" role="alert">{storageError}</div>}{!ready?<div className="loading-screen"><span className="loading-orb"><Mic/></span><p>Finding your speaking space…</p></div>:children}</main><footer className="app-footer"><span>Progress, not perfection.</span><span>Made for your voice. Built around you.</span></footer></div></div>;
+"use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import {
+  House,
+  Mic,
+  ChartNoAxesCombined,
+  BookOpen,
+  History,
+  UserRound,
+  ArrowUpRight,
+  Flame,
+  Menu,
+  X,
+  ChevronDown,
+  Sparkles,
+  CircleHelp,
+} from "lucide-react";
+import { Logo, ButtonLink } from "./ui";
+import { getStats, useVocalis } from "@/hooks/use-vocalis";
+import IdeaVote from "./idea-vote";
+import RewardsBadge from "./rewards-badge";
+const nav = [
+  { href: "/dashboard", label: "Home", icon: House },
+  { href: "/practice", label: "Practice", icon: Mic },
+  { href: "/progress", label: "Progress", icon: ChartNoAxesCombined },
+  { href: "/topics", label: "Topics", icon: BookOpen },
+  { href: "/history", label: "History", icon: History },
+  { href: "/profile", label: "Profile", icon: UserRound },
+];
+export default function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const { data, ready, storageError } = useVocalis();
+  const stats = getStats(data.sessions);
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="app-shell">
+      <aside className={`sidebar ${open ? "sidebar-open" : ""}`}>
+        <div className="sidebar-logo">
+          <Logo />
+          <button
+            className="icon-button mobile-toggle"
+            aria-label="Close menu"
+            onClick={() => setOpen(false)}
+          >
+            <X />
+          </button>
+        </div>
+        <div className="workspace-label">YOUR SPEAKING SPACE</div>
+        <nav aria-label="Application navigation">
+          {nav.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setOpen(false)}
+              className={`sidebar-link ${pathname.startsWith(item.href) ? "selected" : ""}`}
+            >
+              <item.icon size={19} />
+              {item.label}
+              {item.label === "Practice" && (
+                <span className="nav-new">60s</span>
+              )}
+            </Link>
+          ))}
+        </nav>
+        <div className="sidebar-coach">
+          <span className="icon-box orange">
+            <Sparkles size={21} />
+          </span>
+          <strong>
+            A little practice.
+            <br />A stronger voice.
+          </strong>
+          <p>Your next breakthrough could be one session away.</p>
+          <ButtonLink href="/practice">
+            Let’s practice <ArrowUpRight size={16} />
+          </ButtonLink>
+        </div>
+        <Link href="/#how-it-works" className="sidebar-help">
+          <CircleHelp size={17} />
+          How Vocalis works <ArrowUpRight size={14} />
+        </Link>
+        <Link href="/profile" className="sidebar-profile">
+          <span className="profile-avatar">
+            {data.profile.name.slice(0, 1).toUpperCase() || "Y"}
+          </span>
+          <span>
+            <strong>{data.profile.name || "Speaker"}</strong>
+            <small>{stats.level} speaker</small>
+          </span>
+          <ChevronDown size={15} />
+        </Link>
+      </aside>
+      {open && (
+        <button
+          className="sidebar-backdrop"
+          aria-label="Close navigation"
+          onClick={() => setOpen(false)}
+        />
+      )}
+      <div className="app-main">
+        <header className="app-topbar">
+          <div>
+            <button
+              className="icon-button mobile-toggle"
+              aria-label="Open navigation"
+              onClick={() => setOpen(true)}
+            >
+              <Menu />
+            </button>
+            <span className="breadcrumb">
+              Your workspace <span>/</span>{" "}
+              <b>
+                {pathname.startsWith("/session")
+                  ? "Session results"
+                  : nav.find((n) => pathname.startsWith(n.href))?.label ||
+                    "Practice"}
+              </b>
+            </span>
+          </div>
+          <div className="topbar-right">
+            <IdeaVote />
+            <RewardsBadge />
+            <span className="streak-badge">
+              <Flame size={16} />
+              {stats.streak} day streak
+            </span>
+            <Link
+              href="/profile"
+              className="profile-avatar small"
+              aria-label="Open profile"
+            >
+              {data.profile.name.slice(0, 1).toUpperCase() || "Y"}
+            </Link>
+          </div>
+        </header>
+        <main className="app-content">
+          {storageError && (
+            <div className="error-banner" role="alert">
+              {storageError}
+            </div>
+          )}
+          {!ready ? (
+            <div className="loading-screen">
+              <span className="loading-orb">
+                <Mic />
+              </span>
+              <p>Finding your speaking space…</p>
+            </div>
+          ) : (
+            children
+          )}
+        </main>
+        <footer className="app-footer">
+          <span>Progress, not perfection.</span>
+          <span>Made for your voice. Built around you.</span>
+        </footer>
+      </div>
+    </div>
+  );
 }

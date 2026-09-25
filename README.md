@@ -101,6 +101,7 @@ Better long-term progress insights
 Mobile applications
 Additional AI coaching capabilities
 Hackathon pitch training (see below)
+Custom words for better transcription, unlocked with points or Pro (see below)
 
 🏆 Planned: Hackathon Pitch Training
 
@@ -120,6 +121,45 @@ Pitch length options:
 3 minutes: standard hackathon pitch
 5 minutes: full pitch with demo walkthrough
 10+ minutes: extended presentation (Pro)
+
+💎 Points, Pro & Custom Words
+
+Vocalis rewards practice with points, and points unlock more of the product.
+
+How points are earned today:
+
+Every session earns points by level: Beginner +10, Intermediate +20, Advanced +30, Chaotic +50
+Practicing every prompt in a level earns a one-time bonus: +50 / +100 / +150 / +250
+Daily chaos challenge: 3 Chaotic sessions of 3+ minutes in one day earns +75, once a day
+Demo sessions and attempts under 20 seconds don't earn points
+
+What points unlock today:
+
+10, 15 or 20 minute sessions in every category, for 1 hour (150 / 250 / 400 points)
+
+Why custom words are a points and Pro feature
+
+Vocalis transcribes speech with AssemblyAI. AssemblyAI's keyterms prompting lets us send a list of words and phrases to recognize more accurately, such as a project name, a product, a teammate's name or technical jargon. This matters most for hackathon pitches and interviews, where the important words are often uncommon ones.
+
+That list has a hard ceiling. From the AssemblyAI documentation:
+
+"While we support up to 1000 key words and phrases, actual capacity may be lower due to internal tokenization and implementation constraints."
+
+Key points to remember:
+
+Each word in a multi-word phrase counts towards the 1,000 keyword limit
+Capitalization affects capacity (uppercase tokens use more than lowercase)
+Longer words use more capacity than shorter words
+
+Because custom-word capacity is limited per transcript, we treat it as a resource users can earn or buy instead of giving it away without limit. (Planned; custom words are not sent to AssemblyAI yet.)
+
+Free: a small set of custom words per session, enough for your name and your project's name
+Points: redeem points to raise your custom-word allowance, the same way points unlock longer sessions
+Pro: the largest custom-word allowance, within AssemblyAI's limit, plus 10+ minute sessions
+
+Buying points
+
+Point packs (500, 1,500 and 4,000 points) are shown in the app, but checkout is not connected yet and nothing is charged. Before real payments go live, points and purchases need to move from browser storage to the server so balances can't be edited.
 
 The long-term vision is to make Vocalis a comprehensive AI communication training platform, not merely a speech analyzer.
 
