@@ -4,6 +4,7 @@ import { Search, ArrowRight, ArrowUpRight, Zap, Sparkles, Check, Shuffle } from 
 import { categories, nextDifficulty } from '@/data/topics';
 import { useVocalis } from '@/hooks/use-vocalis';
 import { ButtonLink, PageHeading, CategoryCard, iconMap, EmptyState } from './ui';
+import PitchRoadmap from './pitch-roadmap';
 export default function TopicLibrary({practice=false}:{practice?:boolean}){
  const {data}=useVocalis();const [search,setSearch]=useState('');const [difficulty,setDifficulty]=useState('All difficulties');const [category,setCategory]=useState('All categories');const [status,setStatus]=useState('All prompts');const [view,setView]=useState<'categories'|'prompts'>('categories');
  const filtered=categories.filter(c=>(category==='All categories'||category===c.id)&&(difficulty==='All difficulties'||c.difficulty===difficulty)&&(c.name+' '+c.description).toLowerCase().includes(search.toLowerCase()));
@@ -16,5 +17,6 @@ export default function TopicLibrary({practice=false}:{practice?:boolean}){
  {practice&&<div className="pill-filters">{['All difficulties','Beginner','Intermediate','Advanced','Chaotic'].map(d=><button key={d} className={`filter-pill ${difficulty===d?'active':''}`} onClick={()=>setDifficulty(d)}>{d==='All difficulties'?'All categories':d==='Chaotic'?'A little chaos':d}</button>)}</div>}
  {showPrompts?<div className="topic-list">{prompts.map(p=>{const Icon=iconMap[p.category.icon];return <article className="panel topic-row" key={p.id}><span className={`icon-box ${p.category.color}`}><Icon size={19}/></span><div><h3>{p.prompt}</h3><div className="session-meta"><span>{p.category.name}</span><span className={`difficulty ${p.category.difficulty.toLowerCase()}`}><i/>{p.category.difficulty}</span>{p.completed&&<span className="topic-done"><Check size={10}/>Practiced</span>}</div></div><ButtonLink href={`/practice/${p.category.id}?prompt=${encodeURIComponent(p.prompt)}`} secondary>Try this <ArrowUpRight size={13}/></ButtonLink></article>;})}{!prompts.length&&<EmptyState title="A fresh perspective is one filter away." description="No prompts match these filters. Try another category or clear your search."/>}</div>:<div className="category-grid">{filtered.map(c=><CategoryCard key={c.id} category={c}/>)}{!filtered.length&&<div style={{gridColumn:'1 / -1'}}><EmptyState title="Let’s try a different search." description="No categories match these filters. Broaden your search to find your next speaking moment."/></div>}</div>}
  <section className="mode-banner"><div><h2><Zap size={24}/>A little chaos. A lot of possibility.</h2><p>No preparation. No predictable questions. Just you, thinking on your feet.</p></div><ButtonLink href="/practice/chaotic">Enter Chaotic Mode <ArrowRight size={15}/></ButtonLink></section>
+ <PitchRoadmap/>
  </>;
 }

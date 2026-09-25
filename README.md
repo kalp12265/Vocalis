@@ -100,6 +100,26 @@ Expanded communication skill categories
 Better long-term progress insights
 Mobile applications
 Additional AI coaching capabilities
+Hackathon pitch training (see below)
+
+🏆 Planned: Hackathon Pitch Training
+
+A dedicated practice mode for pitching your own project idea, like you would in front of hackathon judges.
+
+Instead of answering a generated topic, the user describes their project and then pitches it out loud. Vocalis analyzes the pitch with feedback built for pitching, such as:
+
+Clarity of the problem and solution
+Structure (hook → problem → solution → demo → impact)
+Pacing against the time limit
+Filler words and confidence
+How memorable and convincing the pitch is
+
+Pitch length options:
+
+1 minute: elevator pitch
+3 minutes: standard hackathon pitch
+5 minutes: full pitch with demo walkthrough
+10+ minutes: extended presentation (Pro)
 
 The long-term vision is to make Vocalis a comprehensive AI communication training platform, not merely a speech analyzer.
 
