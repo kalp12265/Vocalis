@@ -69,7 +69,9 @@ export async function POST(request: Request) {
           : {}),
         // Keyterms prompting: the speaker's custom words (names, project names, jargon).
         ...(keyterms.length ? { keyterms_prompt: keyterms } : {}),
-      }),
+      },
+      // The SDK checks for a finished transcript every 3 s by default; check every 0.5 s instead.
+      { pollingInterval: 500, pollingTimeout: TIMEOUT_MS }),
       new Promise<never>((_, reject) =>
         setTimeout(
           () =>

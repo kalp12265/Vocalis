@@ -37,7 +37,7 @@ import {
   requestTranscription,
 } from "@/services/client";
 import { demoTranscript } from "@/data/demo";
-import { DetectedEntity } from "@/types";
+import { Analysis, AnalysisInput, DetectedEntity } from "@/types";
 const uniqueEntities = (list: DetectedEntity[]) =>
   list.filter(
     (e, i) =>
@@ -91,6 +91,9 @@ export default function PracticeSession({ mode }: { mode: string }) {
   const recordingStart = useRef(0);
   const stopped = useRef(false);
   const analyzing = useRef(false);
+  // Feedback is requested in the background as soon as the transcript arrives, so it's usually
+  // ready by the time the user taps Analyze. Reused only if the inputs haven't changed since.
+  const prefetch = useRef<{ key: string; result: Promise<Analysis> } | null>(null);
   useEffect(() => {
     mounted.current = true;
     if (params.get("demo") === "true") {
@@ -162,7 +165,7 @@ export default function PracticeSession({ mode }: { mode: string }) {
     if (state !== "processing") return;
     const interval = setInterval(
       () => setProcessingStep((s) => Math.min(s + 1, 2)),
-      1200,
+      400,
     );
     return () => clearInterval(interval);
   }, [state]);
@@ -272,6 +275,7 @@ export default function PracticeSession({ mode }: { mode: string }) {
           setTranscript(result.text.trim());
           setEntities(result.entities || []);
           setNotice("");
+          prefetchAnalysis(result.text.trim());
         } else
           setNotice(
             "AssemblyAI could not detect speech in this recording. You can type your transcript below.",
@@ -327,6 +331,22 @@ export default function PracticeSession({ mode }: { mode: string }) {
     );
     setState("review");
   }
+  function analysisInput(text: string): AnalysisInput {
+    return {
+      transcript: text,
+      topic: side ? `${side}: ${topic}` : topic,
+      category: categoryId,
+      duration: Math.max(1, elapsedRef.current),
+      demo: isDemo,
+    };
+  }
+  function prefetchAnalysis(text: string) {
+    const input = analysisInput(text);
+    if (input.demo || text.split(/\s+/).length < 5) return;
+    const result = requestAnalysis(input);
+    result.catch(() => {});
+    prefetch.current = { key: JSON.stringify(input), result };
+  }
   async function analyze() {
     if (analyzing.current) return;
     if (transcript.trim().split(/\s+/).length < 5) {
@@ -338,19 +358,20 @@ export default function PracticeSession({ mode }: { mode: string }) {
     setState("processing");
     setProcessingStep(0);
     try {
+      const input = analysisInput(transcript);
+      const cached =
+        prefetch.current?.key === JSON.stringify(input)
+          ? prefetch.current.result.catch(() => requestAnalysis(input))
+          : requestAnalysis(input);
+      prefetch.current = null;
       const [analysis] = await Promise.all([
-        requestAnalysis({
-          transcript,
-          topic: side ? `${side}: ${topic}` : topic,
-          category: categoryId,
-          duration: Math.max(1, elapsedRef.current),
-          demo: isDemo,
-        }),
-        new Promise((resolve) => setTimeout(resolve, 3300)),
+        cached,
+        // A brief minimum so the progress steps don't flash past.
+        new Promise((resolve) => setTimeout(resolve, 900)),
       ]);
       if (!mounted.current) return;
       setProcessingStep(3);
-      await new Promise((resolve) => setTimeout(resolve, 650));
+      await new Promise((resolve) => setTimeout(resolve, 250));
       if (!mounted.current) return;
       const id = crypto.randomUUID();
       addSession({
