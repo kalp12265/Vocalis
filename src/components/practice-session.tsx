@@ -23,6 +23,8 @@ import { getCategory } from "@/data/topics";
 import { useVocalis } from "@/hooks/use-vocalis";
 import { useUnlock } from "@/hooks/use-unlock";
 import { UNLOCK_COST, UNLOCK_MINUTES } from "@/data/rewards";
+import { FREE_CUSTOM_WORDS, UNLOCKED_CUSTOM_WORDS } from "@/data/custom-words";
+import CustomWords from "./custom-words";
 import { Waveform, iconMap } from "./ui";
 import { AudioRecorder } from "@/services/recording";
 import {
@@ -42,7 +44,7 @@ const formatLength = (seconds: number) => `${seconds / 60} min`;
 export default function PracticeSession({ mode }: { mode: string }) {
   const params = useSearchParams();
   const router = useRouter();
-  const { addSession } = useVocalis();
+  const { data, addSession, updateProfile } = useVocalis();
   const [categoryId, setCategoryId] = useState(mode);
   const category = getCategory(categoryId);
   const Icon = iconMap[category.icon];
@@ -61,6 +63,8 @@ export default function PracticeSession({ mode }: { mode: string }) {
   });
   const unlock = useUnlock();
   const unlockLength = unlock.minutes * 60;
+  const customWords = data.profile.customWords || [];
+  const wordAllowance = unlock.active ? UNLOCKED_CUSTOM_WORDS : FREE_CUSTOM_WORDS;
   const [transcript, setTranscript] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
   const [error, setError] = useState("");
@@ -248,7 +252,11 @@ export default function PracticeSession({ mode }: { mode: string }) {
       setTranscribing(true);
       setNotice("Transcribing your recording with AssemblyAI…");
       try {
-        const result = await requestTranscription(audio);
+        const result = await requestTranscription(
+          audio,
+          side ? `${side}: ${topic}` : topic,
+          customWords.slice(0, wordAllowance),
+        );
         if (!mounted.current) return;
         if (result.text.trim()) {
           setTranscript(result.text.trim());
@@ -591,6 +599,14 @@ export default function PracticeSession({ mode }: { mode: string }) {
                   </p>
                 )}
               </div>
+            )}
+            {state === "ready" && (
+              <CustomWords
+                words={customWords}
+                allowance={wordAllowance}
+                unlocked={unlock.active}
+                onChange={(words) => updateProfile({ customWords: words })}
+              />
             )}
             <div className="practice-bottom">
               <ShieldCheck size={13} />

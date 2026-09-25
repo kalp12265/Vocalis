@@ -17,7 +17,7 @@ export interface Analysis {
  mode_metrics?: Record<string, number>;
 }
 export interface Session { id: string; date: string; category: string; topic: string; duration: number; transcript: string; analysis: Analysis; demo: boolean; }
-export interface Profile { name: string; goals: string[]; comfort: string; onboarded: boolean; }
+export interface Profile { name: string; goals: string[]; comfort: string; onboarded: boolean; customWords?: string[]; }
 export interface AnalysisInput { transcript: string; topic: string; category: string; duration: number; demo?: boolean; }
 export interface Rewards { spent: number; unlockedUntil?: string; unlockedMinutes?: number; }
 export interface UserData { profile: Profile; sessions: Session[]; rewards?: Rewards; }
