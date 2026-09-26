@@ -20,6 +20,7 @@ import {
   Timer,
 } from "lucide-react";
 import { getCategory } from "@/data/topics";
+import { SESSION_TIPS } from "@/data/techniques";
 import { useVocalis } from "@/hooks/use-vocalis";
 import { useUnlock } from "@/hooks/use-unlock";
 import { UNLOCK_COST, UNLOCK_MINUTES } from "@/data/rewards";
@@ -744,23 +745,7 @@ export default function PracticeSession({ mode }: { mode: string }) {
           )}
           {state !== "review" && (
             <div className="session-tips">
-              {[
-                {
-                  n: "01",
-                  title: "Start with your point",
-                  text: "A simple answer is a strong beginning.",
-                },
-                {
-                  n: "02",
-                  title: "Make it real",
-                  text: "Give one example your listener can picture.",
-                },
-                {
-                  n: "03",
-                  title: "Give yourself space",
-                  text: "A pause is better than a perfect script.",
-                },
-              ].map((t) => (
+              {SESSION_TIPS.map((t) => (
                 <div className="session-tip" key={t.n}>
                   <span>{t.n}</span>
                   <div>
