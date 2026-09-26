@@ -4,11 +4,189 @@ import { useState } from 'react';
 import { Search, ArrowUpRight, Mic, ArrowRight, History } from 'lucide-react';
 import { useVocalis } from '@/hooks/use-vocalis';
 import { categories, getCategory } from '@/data/topics';
-import { PageHeading, ButtonLink, EmptyState } from './ui';
-export default function HistoryPage(){
- const {data}=useVocalis();const [search,setSearch]=useState('');const [category,setCategory]=useState('all');const [type,setType]=useState('all');const [sort,setSort]=useState('newest');
- const sessions=[...data.sessions].filter(s=>(s.topic+' '+getCategory(s.category).name).toLowerCase().includes(search.toLowerCase())&&(category==='all'||s.category===category)&&(type==='all'||(type==='demo'?s.demo:!s.demo))).sort((a,b)=>sort==='score'?b.analysis.overall_score-a.analysis.overall_score:sort==='oldest'?a.date.localeCompare(b.date):b.date.localeCompare(a.date));
- return <><PageHeading label="EVERY SESSION IS A STEP FORWARD" title="Your practice, in perspective." description="Revisit your ideas, find familiar patterns, and see how your voice is evolving." action={<ButtonLink href="/practice">Start practice <Mic size={15}/></ButtonLink>}/><div className="filter-bar"><div className="search-field"><Search/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search your topics…" aria-label="Search session history"/></div><select value={category} onChange={e=>setCategory(e.target.value)} aria-label="Filter sessions by category"><option value="all">All categories</option>{categories.map(c=><option value={c.id} key={c.id}>{c.name}</option>)}</select><select aria-label="Filter session source" value={type} onChange={e=>setType(e.target.value)}><option value="all">All sessions</option><option value="personal">My practice</option><option value="demo">Demo sessions</option></select><select aria-label="Sort session history" value={sort} onChange={e=>setSort(e.target.value)}><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="score">Highest score</option></select></div>
- {sessions.length?<section className="panel table-panel"><div className="panel-heading"><h2 style={{display:'flex',alignItems:'center',gap:7}}><History size={16}/>Your speaking moments</h2><span className="subtle-tag">{sessions.length} sessions</span></div><table className="history-table"><thead><tr><th>Topic & category</th><th className="hide-mobile">Date</th><th>Score</th><th className="hide-tablet">Duration</th><th className="hide-tablet">Change</th><th className="hide-mobile">Main focus</th><th><span className="sr-only">View session</span></th></tr></thead><tbody>{sessions.map(s=>{const index=data.sessions.findIndex(item=>item.id===s.id);const prev=data.sessions[index-1];const diff=prev?s.analysis.overall_score-prev.analysis.overall_score:null;return <tr key={s.id}><td><Link className="session-topic" href={`/session/${s.id}`}>{s.topic}</Link><span className="session-meta"><span>{getCategory(s.category).name}</span>{s.demo&&<span className="subtle-tag" style={{fontSize:6,padding:'1px 4px'}}>DEMO</span>}</span></td><td className="hide-mobile">{new Date(s.date).toLocaleDateString(undefined,{month:'short',day:'numeric'})}<div className="session-meta">{new Date(s.date).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})}</div></td><td><span className="session-score">{s.analysis.overall_score}</span></td><td className="hide-tablet">{s.duration}s</td><td className={`hide-tablet ${(diff||0)>=0?'positive':''}`}>{diff===null?'—':`${diff>=0?'+':''}${diff}`}</td><td className="hide-mobile">{s.analysis.weak_areas[0]?.name||'—'}</td><td><Link className="icon-button" href={`/session/${s.id}`} aria-label={`View analysis for ${s.topic}`}><ArrowUpRight size={16}/></Link></td></tr>;})}</tbody></table></section>:<EmptyState title={data.sessions.length?'No sessions match this search.':'Your speaking story starts here.'} description={data.sessions.length?'Try a different category or clear your search to revisit your practice.':'Choose a topic and give yourself one minute. Your sessions and coaching will be saved here.'}/>}
- <div className="topic-bottom" style={{marginTop:30}}><span>Every answer is a chance to try a new approach.</span><Link href="/practice">Make your next one count <ArrowRight size={13}/></Link></div></>;
+import { PageHeading, ButtonLink, EmptyState, Badge, Card, CardHeader } from './ui';
+
+export default function HistoryPage() {
+  const { data } = useVocalis();
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('all');
+  const [type, setType] = useState('all');
+  const [sort, setSort] = useState('newest');
+  const sessions = [...data.sessions]
+    .filter(
+      (s) =>
+        (s.topic + ' ' + getCategory(s.category).name)
+          .toLowerCase()
+          .includes(search.toLowerCase()) &&
+        (category === 'all' || s.category === category) &&
+        (type === 'all' || (type === 'demo' ? s.demo : !s.demo)),
+    )
+    .sort((a, b) =>
+      sort === 'score'
+        ? b.analysis.overall_score - a.analysis.overall_score
+        : sort === 'oldest'
+          ? a.date.localeCompare(b.date)
+          : b.date.localeCompare(a.date),
+    );
+
+  return (
+    <>
+      <PageHeading
+        label="EVERY SESSION IS A STEP FORWARD"
+        title="Your practice, in perspective."
+        description="Revisit your ideas, find familiar patterns, and see how your voice is evolving."
+        action={
+          <ButtonLink href="/practice">
+            Start practice <Mic size={15} />
+          </ButtonLink>
+        }
+      />
+      <div className="filter-bar">
+        <div className="search-field">
+          <Search />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search your topics…"
+            aria-label="Search session history"
+          />
+        </div>
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          aria-label="Filter sessions by category"
+        >
+          <option value="all">All categories</option>
+          {categories.map((c) => (
+            <option value={c.id} key={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Filter session source"
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+        >
+          <option value="all">All sessions</option>
+          <option value="personal">My practice</option>
+          <option value="demo">Demo sessions</option>
+        </select>
+        <select
+          aria-label="Sort session history"
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+        >
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+          <option value="score">Highest score</option>
+        </select>
+      </div>
+      {sessions.length ? (
+        <Card className="table-panel">
+          <CardHeader action={<Badge>{sessions.length} sessions</Badge>}>
+            <h2 style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <History size={16} />
+              Your speaking moments
+            </h2>
+          </CardHeader>
+          <table className="history-table">
+            <thead>
+              <tr>
+                <th>Topic & category</th>
+                <th className="hide-mobile">Date</th>
+                <th>Score</th>
+                <th className="hide-tablet">Duration</th>
+                <th className="hide-tablet">Change</th>
+                <th className="hide-mobile">Main focus</th>
+                <th>
+                  <span className="sr-only">View session</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {sessions.map((s) => {
+                const index = data.sessions.findIndex((item) => item.id === s.id);
+                const prev = data.sessions[index - 1];
+                const diff = prev
+                  ? s.analysis.overall_score - prev.analysis.overall_score
+                  : null;
+                return (
+                  <tr key={s.id}>
+                    <td>
+                      <Link className="session-topic" href={`/session/${s.id}`}>
+                        {s.topic}
+                      </Link>
+                      <span className="session-meta">
+                        <span>{getCategory(s.category).name}</span>
+                        {s.demo && (
+                          <Badge style={{ fontSize: 6, padding: '1px 4px' }}>
+                            DEMO
+                          </Badge>
+                        )}
+                      </span>
+                    </td>
+                    <td className="hide-mobile">
+                      {new Date(s.date).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                      <div className="session-meta">
+                        {new Date(s.date).toLocaleTimeString(undefined, {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        })}
+                      </div>
+                    </td>
+                    <td>
+                      <span className="session-score">
+                        {s.analysis.overall_score}
+                      </span>
+                    </td>
+                    <td className="hide-tablet">{s.duration}s</td>
+                    <td
+                      className={`hide-tablet ${(diff || 0) >= 0 ? 'positive' : ''}`}
+                    >
+                      {diff === null ? '—' : `${diff >= 0 ? '+' : ''}${diff}`}
+                    </td>
+                    <td className="hide-mobile">
+                      {s.analysis.weak_areas[0]?.name || '—'}
+                    </td>
+                    <td>
+                      <Link
+                        className="icon-button"
+                        href={`/session/${s.id}`}
+                        aria-label={`View analysis for ${s.topic}`}
+                      >
+                        <ArrowUpRight size={16} />
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </Card>
+      ) : (
+        <EmptyState
+          title={
+            data.sessions.length
+              ? 'No sessions match this search.'
+              : 'Your speaking story starts here.'
+          }
+          description={
+            data.sessions.length
+              ? 'Try a different category or clear your search to revisit your practice.'
+              : 'Choose a topic and give yourself one minute. Your sessions and coaching will be saved here.'
+          }
+        />
+      )}
+      <div className="topic-bottom" style={{ marginTop: 30 }}>
+        <span>Every answer is a chance to try a new approach.</span>
+        <Link href="/practice">
+          Make your next one count <ArrowRight size={13} />
+        </Link>
+      </div>
+    </>
+  );
 }
