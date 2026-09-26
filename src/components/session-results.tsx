@@ -3,11 +3,8 @@ import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
-  ArrowUpRight,
   CheckCircle2,
   AlertCircle,
-  Sparkles,
-  Target,
   TrendingUp,
   Mic,
   FileText,
@@ -26,9 +23,17 @@ import {
   Badge,
   Card,
   CardHeader,
-  Progress,
   Eyebrow,
 } from "./ui";
+import {
+  CoachPanel,
+  FeedbackList,
+  FillerBadges,
+  MetricsGrid,
+  ModeMetrics,
+  TechniquesPanel,
+  WeakAreas,
+} from "./results";
 
 export default function SessionResults({ id }: { id: string }) {
   const { data } = useVocalis();
@@ -125,156 +130,47 @@ export default function SessionResults({ id }: { id: string }) {
       </div>
       <div className="results-columns">
         <div>
-          <Card>
-            <h2 className="feedback-title">
-              <Target />
-              Your speaking metrics
-            </h2>
-            <div className="metric-grid">
-              {Object.entries(a.metrics).map(([name, value]) => (
-                <Progress
-                  key={name}
-                  label={name}
-                  value={value}
-                  display={`${value} / 100`}
-                  warn={value < 75}
+          <MetricsGrid
+            metrics={a.metrics}
+            note="Coaching indicators help you reflect on patterns. They are not a certification of speaking ability. Pauses and vocal delivery are not measured in local mode."
+          />
+          <FeedbackList
+            title="What you did well"
+            icon={<CheckCircle2 />}
+            items={a.strengths}
+          />
+          <FeedbackList
+            title="Your blunders"
+            icon={<AlertCircle />}
+            titleClassName="feedback-title orange-text"
+            itemClassName="feedback-item issue"
+            items={a.mistakes}
+            empty="No major text-pattern flags were found. Listen back to assess your pacing, pauses, and delivery."
+            footer={<FillerBadges fillers={a.filler_words} />}
+          />
+          <TechniquesPanel
+            techniques={a.improvement_techniques}
+            weakAreas={a.weak_areas}
+            voiceCoach={
+              !session.demo && a.improvement_techniques.length > 0 ? (
+                <VoiceCoach
+                  topic={session.topic}
+                  transcript={session.transcript}
+                  techniques={a.improvement_techniques}
+                  feedback={a.coach_feedback}
                 />
-              ))}
-            </div>
-            <p className="muted-note">
-              Coaching indicators help you reflect on patterns. They are not a
-              certification of speaking ability. Pauses and vocal delivery are
-              not measured in local mode.
-            </p>
-          </Card>
-          <Card>
-            <h2 className="feedback-title">
-              <CheckCircle2 />
-              What you did well
-            </h2>
-            {a.strengths.map((s, i) => (
-              <div className="feedback-item" key={i}>
-                <h4>{s.title}</h4>
-                <p>{s.detail}</p>
-              </div>
-            ))}
-          </Card>
-          <Card>
-            <h2 className="feedback-title orange-text">
-              <AlertCircle />
-              Your blunders
-            </h2>
-            {a.mistakes.length ? (
-              a.mistakes.map((m, i) => (
-                <div className="feedback-item issue" key={i}>
-                  <h4>{m.title}</h4>
-                  <p>{m.detail}</p>
-                </div>
-              ))
-            ) : (
-              <p className="muted-note">
-                No major text-pattern flags were found. Listen back to assess
-                your pacing, pauses, and delivery.
-              </p>
-            )}
-            {a.filler_words.length > 0 && (
-              <div
-                className="pill-filters"
-                style={{ marginTop: 18, marginBottom: 0 }}
-              >
-                {a.filler_words.map((f) => (
-                  <Badge key={f.word}>
-                    {f.word} × {f.count}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </Card>
-          <Card>
-            <h2 className="feedback-title">
-              <Sparkles />
-              Small techniques. Big difference.
-            </h2>
-            <p className="muted-note" style={{ marginTop: -8 }}>
-              Turn your next opportunity into something you can practice.
-            </p>
-            {!session.demo && a.improvement_techniques.length > 0 && (
-              <VoiceCoach
-                topic={session.topic}
-                transcript={session.transcript}
-                techniques={a.improvement_techniques}
-                feedback={a.coach_feedback}
-              />
-            )}
-            {a.improvement_techniques.map((t, i) => (
-              <article className="technique-card" key={i}>
-                <span className="tiny-label">
-                  TECHNIQUE 0{i + 1} · {t.weakness.toUpperCase()}
-                </span>
-                <h3>{t.name}</h3>
-                <p>
-                  <b>What to work on:</b>{" "}
-                  {a.weak_areas.find((w) => w.name === t.weakness)?.detail}
-                </p>
-                <p>
-                  <b>Why it matters:</b> {t.why}
-                </p>
-                <p>
-                  <b>What to do:</b> {t.action}
-                </p>
-                <div className="practice-exercise">
-                  <strong>YOUR NEXT REP</strong>
-                  {t.practice}
-                </div>
-              </article>
-            ))}
-          </Card>
+              ) : undefined
+            }
+          />
         </div>
         <div>
-          <Card className="coach-panel">
-            <h2 className="feedback-title">
-              <Sparkles />
-              Your Vocalis Coach
-            </h2>
-            <p>{a.coach_feedback}</p>
-            <ButtonLink href={retry}>
-              Try again with this technique <ArrowUpRight size={14} />
-            </ButtonLink>
-          </Card>
-          <Card>
-            <h2 className="feedback-title">
-              <Target />
-              Your weak areas
-            </h2>
-            {a.weak_areas.map((w, i) => (
-              <div className="weak-area" key={i}>
-                <span>{i + 1}</span>
-                <div>
-                  <h4>{w.name}</h4>
-                  <p>{w.detail}</p>
-                </div>
-              </div>
-            ))}
-          </Card>
+          <CoachPanel feedback={a.coach_feedback} retryHref={retry} />
+          <WeakAreas areas={a.weak_areas} />
           {a.mode_metrics && (
-            <Card>
-              <h2 className="feedback-title">
-                <Target />
-                {getCategory(session.category).name} focus
-              </h2>
-              {Object.entries(a.mode_metrics).map(([name, value]) => (
-                <Progress
-                  key={name}
-                  label={name}
-                  value={value}
-                  display={value}
-                />
-              ))}
-              <p className="muted-note">
-                Text-based indicators for this practice mode. Listen to your
-                recording for pacing and delivery.
-              </p>
-            </Card>
+            <ModeMetrics
+              title={`${getCategory(session.category).name} focus`}
+              metrics={a.mode_metrics}
+            />
           )}
           <Card>
             <Eyebrow>KEEP YOUR MOMENTUM</Eyebrow>
@@ -297,9 +193,7 @@ export default function SessionResults({ id }: { id: string }) {
         </div>
       </div>
       <Card className="transcript-panel">
-        <CardHeader
-          action={<Badge>{a.words} words</Badge>}
-        >
+        <CardHeader action={<Badge>{a.words} words</Badge>}>
           <div>
             <h2 style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <FileText size={16} />

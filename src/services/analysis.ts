@@ -1,5 +1,6 @@
 import { Analysis, AnalysisInput, Metric } from "@/types";
 import { FILLER_WORDS } from "@/data/fillers";
+import { pickTechniques, techniqueWhy } from "@/data/techniques";
 export interface AnalysisProvider {
   analyze(input: AnalysisInput): Promise<Analysis>;
 }
@@ -54,80 +55,6 @@ export function analyzeLocally(input: AnalysisInput): Analysis {
   };
   const ranked = Object.entries(metrics).sort((a, b) => a[1] - b[1]);
   const first = sentences[0]?.trim() || "";
-  const techniques = [
-    {
-      name: "Point → Reason → Example → Conclusion",
-      weakness: "Structure",
-      why: "A clear sequence makes your reasoning easier to follow.",
-      action:
-        "State your answer in one sentence. Explain why, give one concrete example, and return to your point.",
-      practice:
-        "Take the same prompt again. Spend 10 seconds on your point, 15 on your reason, 25 on an example, and 10 on your conclusion.",
-    },
-    {
-      name: "One idea, one sentence",
-      weakness: "Conciseness",
-      why: "Long or overlapping thoughts make listeners work harder to find your point.",
-      action:
-        "Finish one thought before introducing another. Replace repeated explanations with a short pause.",
-      practice:
-        "Retell your answer in three sentences. Give each sentence exactly one job.",
-    },
-    {
-      name: "Replace the filler with a breath",
-      weakness: "Fluency",
-      why: "A quiet beat is easier to follow than repeated verbal placeholders.",
-      action:
-        "When you feel a filler word coming, exhale gently and pause instead.",
-      practice:
-        "Speak for 30 seconds using a deliberate pause between each sentence. Listen back for your most frequent filler.",
-    },
-    {
-      name: "Make it concrete",
-      weakness: "Clarity",
-      why: "A specific example turns an abstract claim into something memorable.",
-      action:
-        "Choose one real person, place, or moment to illustrate your point.",
-      practice:
-        "Repeat your response with the phrase “For example…” followed by a specific situation.",
-    },
-    {
-      name: "The 3-second rule",
-      weakness: "Spontaneity",
-      why: "Searching for a perfect opening can interrupt the flow of an answer.",
-      action:
-        "Choose a simple position and start within three seconds. Develop your reasoning as you speak.",
-      practice:
-        "Try three new prompts. Give yourself only three seconds before saying your opening sentence.",
-    },
-    {
-      name: "Answer, then evidence",
-      weakness: "Relevance",
-      why: "Listeners need to hear how each idea connects to the question.",
-      action:
-        "Use the key subject of the prompt in your first sentence and tie your example back to it.",
-      practice:
-        "Write a one-sentence answer to the prompt. Use that exact sentence to begin your next recording.",
-    },
-    {
-      name: "Trade vague words for precise ones",
-      weakness: "Vocabulary",
-      why: "Specific words communicate more with less explanation.",
-      action:
-        "Replace “things,” “good,” and “nice” with a concrete noun or descriptive verb.",
-      practice:
-        "Find three general words in your transcript and replace each with a more precise alternative.",
-    },
-    {
-      name: "Own your opening",
-      weakness: "Confidence",
-      why: "Repeated hedges can obscure the position you are trying to communicate.",
-      action:
-        "Start with “I believe…” and a direct answer, rather than apologizing or qualifying your idea.",
-      practice:
-        "Record your first sentence three times, removing a hedge each time. Listen for the clearest version.",
-    },
-  ];
   const strengths = [
     {
       title: hasExample ? "You made it concrete" : "You committed to an answer",
@@ -176,15 +103,16 @@ export function analyzeLocally(input: AnalysisInput): Analysis {
       detail:
         "Several words recur throughout your answer. Check whether you are developing your idea or restating it.",
     });
-  const weak_areas = ranked
-    .slice(0, 3)
-    .map(([name]) => ({
-      name,
-      detail: techniques.find((t) => t.weakness === name)!.why,
-    }));
-  const selected = weak_areas.map((w) =>
-    techniques.find((t) => t.weakness === w.name)!,
+  const weakMetrics = ranked.slice(0, 3).map(([name]) => name as Metric);
+  // Predetermined bank: tip is specified by weakest metrics; seed varies techniques across sessions.
+  const selected = pickTechniques(
+    weakMetrics,
+    `${topic}|${category}|${duration}|${words.length}`,
   );
+  const weak_areas = weakMetrics.map((name) => ({
+    name,
+    detail: techniqueWhy(name),
+  }));
   let mode_metrics: Record<string, number> | undefined;
   if (category === "debate")
     mode_metrics = {
