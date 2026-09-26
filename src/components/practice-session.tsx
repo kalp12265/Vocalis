@@ -25,7 +25,7 @@ import { useUnlock } from "@/hooks/use-unlock";
 import { UNLOCK_COST, UNLOCK_MINUTES } from "@/data/rewards";
 import { FREE_CUSTOM_WORDS, UNLOCKED_CUSTOM_WORDS } from "@/data/custom-words";
 import CustomWords from "./custom-words";
-import { Waveform, iconMap } from "./ui";
+import { Waveform, iconMap, RecordProgress } from "./ui";
 import { AudioRecorder } from "@/services/recording";
 import {
   createTranscriptionService,
@@ -564,20 +564,11 @@ export default function PracticeSession({ mode }: { mode: string }) {
                     ? countdown || "…"
                     : `${String(Math.floor((state === "ready" ? limit : remaining) / 60)).padStart(2, "0")}:${String((state === "ready" ? limit : remaining) % 60).padStart(2, "0")}`}
                 </div>
-                <div
-                  className={`record-progress ${remaining <= 10 && state === "recording" ? "warning" : ""}`}
-                  role="progressbar"
-                  aria-label="Speaking time used"
-                  aria-valuemin={0}
-                  aria-valuemax={limit}
-                  aria-valuenow={state === "recording" ? elapsed : 0}
-                >
-                  <i
-                    style={{
-                      width: `${state === "recording" ? Math.min(100, (elapsed / limit) * 100) : 0}%`,
-                    }}
-                  />
-                </div>
+                <RecordProgress
+                  value={state === "recording" ? elapsed : 0}
+                  max={limit}
+                  warning={remaining <= 10 && state === "recording"}
+                />
                 <div
                   className={`record-status ${state === "recording" ? "listening" : ""}`}
                   aria-live="polite"

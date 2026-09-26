@@ -17,7 +17,7 @@ import {
   Sparkles,
   CircleHelp,
 } from "lucide-react";
-import { Logo, ButtonLink } from "./ui";
+import { Logo, ButtonLink, Avatar, Badge } from "./ui";
 import { getStats, useVocalis } from "@/hooks/use-vocalis";
 import IdeaVote from "./idea-vote";
 import RewardsBadge from "./rewards-badge";
@@ -82,9 +82,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           How Vocalis works <ArrowUpRight size={14} />
         </Link>
         <Link href="/profile" className="sidebar-profile">
-          <span className="profile-avatar">
-            {data.profile.name.slice(0, 1).toUpperCase() || "Y"}
-          </span>
+          <Avatar name={data.profile.name} />
           <span>
             <strong>{data.profile.name || "Speaker"}</strong>
             <small>{stats.level} speaker</small>
@@ -122,17 +120,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <div className="topbar-right">
             <IdeaVote />
             <RewardsBadge />
-            <span className="streak-badge">
-              <Flame size={16} />
+            <Badge variant="streak" icon={<Flame size={16} />}>
               {stats.streak} day streak
-            </span>
-            <Link
-              href="/profile"
-              className="profile-avatar small"
-              aria-label="Open profile"
-            >
-              {data.profile.name.slice(0, 1).toUpperCase() || "Y"}
-            </Link>
+            </Badge>
+            <Avatar name={data.profile.name} size="sm" href="/profile" />
           </div>
         </header>
         <main className="app-content">
