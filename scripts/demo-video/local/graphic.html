@@ -1,0 +1,37 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#fcfbf8;color:#292b28;font-family:'DM Sans',sans-serif;overflow:hidden}
+.stage{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;transition:opacity .7s}
+.eyebrow{font:700 11px 'DM Sans';letter-spacing:3px;color:#7d7f76;margin-bottom:22px}
+.box{width:520px;border:1.5px solid #e9e9e1;background:#fff;border-radius:18px;padding:20px 28px;text-align:center;box-shadow:0 10px 30px rgba(60,50,30,.06);opacity:0;transform:translateY(14px);transition:all .7s cubic-bezier(.2,.7,.2,1)}
+.box h2{font:800 22px 'Manrope';letter-spacing:2.5px;margin:0}
+.box p{margin:6px 0 0;color:#7d7f76;font-size:13px}
+.box.hl{border-color:#e97645;background:#fcf0e8}.box.hl h2{color:#c6562b}
+.arrow{height:38px;display:flex;align-items:center;justify-content:center;color:#e97645;font-size:24px;opacity:0;transition:opacity .6s}
+.chips{display:flex;gap:10px;justify-content:center;margin-top:14px}
+.chip{font:600 12.5px 'DM Sans';padding:7px 14px;border-radius:999px;background:#fff;border:1px solid #f0c9b4;color:#c6562b;opacity:0;transform:scale(.9);transition:all .5s}
+.on{opacity:1!important;transform:none!important}
+#tag{opacity:0}
+#tag h1{font:800 76px 'Manrope';letter-spacing:-3px;margin:0}#tag h1 em{font-style:normal;color:#e97645}
+#tag .gh{margin-top:34px;font:500 17px 'DM Sans';color:#7d7f76;opacity:0;transition:opacity .8s}
+#tag .gh b{color:#292b28;font-weight:600}
+.off{opacity:0!important}
+</style></head><body>
+<div class="stage" id="flow">
+ <div class="eyebrow">HOW VOCALIS WORKS UNDER THE HOOD</div>
+ <div class="box" id="b1"><h2>VOICE INPUT</h2><p>Your spontaneous 60-second answer, straight from the microphone</p></div>
+ <div class="arrow" id="a1">↓</div>
+ <div class="box hl" id="b2"><h2>ASSEMBLYAI</h2><div class="chips"><span class="chip">Voice Agent</span><span class="chip">Speech-to-Text</span><span class="chip">Speech Understanding</span></div></div>
+ <div class="arrow" id="a2">↓</div>
+ <div class="box" id="b3"><h2>VOCALIS</h2><p>Analysis · Feedback · Conversational coaching</p></div>
+</div>
+<div class="stage" id="tag"><h1>Voice <em>is</em> the product.</h1><div class="gh" id="gh">Open source · <b>github.com/kalp12265/Vocalis</b></div></div>
+<script>
+const on=id=>document.getElementById(id).classList.add('on');
+window.step=n=>{ if(n>=1)on('b1'); if(n>=2){on('a1');on('b2');document.querySelectorAll('.chip').forEach((c,i)=>setTimeout(()=>c.classList.add('on'),500+i*350));} if(n>=3){on('a2');on('b3');} };
+window.all=()=>{document.querySelectorAll('.box,.arrow,.chip').forEach(e=>{e.style.transition='none';e.classList.add('on')});};
+window.focus3=()=>{document.getElementById('b3').classList.add('hl');};
+window.tagline=()=>{document.getElementById('flow').classList.add('off');setTimeout(()=>{document.getElementById('tag').style.transition='opacity .8s';document.getElementById('tag').style.opacity=1;},450);};
+window.github=()=>{document.getElementById('gh').style.opacity=1;};
+</script></body></html>

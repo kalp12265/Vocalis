@@ -1,0 +1,12 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+<style>html,body{margin:0;height:100%;background:#fcfbf8;overflow:hidden}
+.c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.logo{display:flex;align-items:center;gap:22px;font:800 118px 'Manrope';letter-spacing:-5px;color:#292b28;opacity:0;transform:scale(.96);transition:all 1.2s cubic-bezier(.2,.7,.2,1)}
+.logo svg{color:#e97645}.dot{color:#e97645}
+.tag{margin-top:26px;font:500 27px 'DM Sans';color:#7d7f76;letter-spacing:.3px;opacity:0;transition:opacity 1s}
+.tag em{font-style:normal;color:#c6562b}
+.on{opacity:1!important;transform:none!important}</style></head><body><div class="c">
+<div class="logo" id="l"><svg width="104" height="104" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10v3"/><path d="M6 6v11"/><path d="M10 3v18"/><path d="M14 8v7"/><path d="M18 5v13"/><path d="M22 10v3"/></svg><span>vocalis<span class="dot">.</span></span></div>
+<div class="tag" id="t">Speak better. <em>Think faster.</em></div></div>
+<script>window.showLogo=()=>document.getElementById('l').classList.add('on');window.showTag=()=>document.getElementById('t').classList.add('on');</script></body></html>
