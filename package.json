@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@playwright/test": "^1.63.0",
+    "@vercel/analytics": "^2.0.1",
     "assemblyai": "^4.41.2",
     "dotenv": "17.3.1",
     "drizzle-orm": "0.45.2",
